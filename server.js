@@ -63,6 +63,7 @@ router.add("DELETE", paths.talkPath, async (server, title) => {
   return { status: 204 };
 });
 
+// Body parser
 function readStream(stream) {
   return new Promise((resolve, reject) => {
     let data = "";
@@ -73,9 +74,9 @@ function readStream(stream) {
 }
 
 router.add("PUT", paths.talkPath, async (server, title, request) => {
-  let requestBody = await readStream(request);
   let talk;
   try {
+    let requestBody = await readStream(request);
     talk = JSON.parse(requestBody);
   } catch (_) {
     return { status: 400, body: "Invalid JSON" };
@@ -99,9 +100,9 @@ router.add("PUT", paths.talkPath, async (server, title, request) => {
 });
 
 router.add("POST", paths.talkComments, async (server, title, request) => {
-  let requestBody = await readStream(request);
   let comment;
   try {
+    let requestBody = await readStream(request);
     comment = JSON.parse(requestBody);
   } catch (_) {
     return { status: 400, body: "Invalid JSON" };

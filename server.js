@@ -38,9 +38,13 @@ var TedTalkServer = class TedTalkServer {
   }
 };
 
-const talkPath = /^\/talks\/([^\/]+)$/;
+const paths = {
+  talkPath: /^\/talks\/([^\/]+)$/,
+  talkComments: /^\/talks\/([^\/]+)\/comments$/,
+  talks: /^\/talks$/,
+};
 
-router.add("GET", talkPath, async (server, title) => {
+router.add("GET", paths.talkPath, async (server, title) => {
   if (title in server.talks) {
     return {
       body: JSON.stringify(server.talks[title]),
@@ -51,7 +55,7 @@ router.add("GET", talkPath, async (server, title) => {
   }
 });
 
-router.add("DELETE", talkPath, async (server, title) => {
+router.add("DELETE", paths.talkPath, async (server, title) => {
   if (title in server.talks) {
     delete server.talks[title];
     server.updated();
@@ -68,7 +72,7 @@ function readStream(stream) {
   });
 }
 
-router.add("PUT", talkPath, async (server, title, request) => {
+router.add("PUT", paths.talkPath, async (server, title, request) => {
   let requestBody = await readStream(request);
   let talk;
   try {
@@ -94,33 +98,29 @@ router.add("PUT", talkPath, async (server, title, request) => {
   return { status: 204 };
 });
 
-router.add(
-  "POST",
-  /^\/talks\/([^\/]+)\/comments$/,
-  async (server, title, request) => {
-    let requestBody = await readStream(request);
-    let comment;
-    try {
-      comment = JSON.parse(requestBody);
-    } catch (_) {
-      return { status: 400, body: "Invalid JSON" };
-    }
-
-    if (
-      !comment ||
-      typeof comment.author != "string" ||
-      typeof comment.message != "string"
-    ) {
-      return { status: 400, body: "Bad comment data" };
-    } else if (title in server.talks) {
-      server.talks[title].comments.push(comment);
-      server.updated();
-      return { status: 204 };
-    } else {
-      return { status: 404, body: `No talk '${title}' found` };
-    }
+router.add("POST", paths.talkComments, async (server, title, request) => {
+  let requestBody = await readStream(request);
+  let comment;
+  try {
+    comment = JSON.parse(requestBody);
+  } catch (_) {
+    return { status: 400, body: "Invalid JSON" };
   }
-);
+
+  if (
+    !comment ||
+    typeof comment.author != "string" ||
+    typeof comment.message != "string"
+  ) {
+    return { status: 400, body: "Bad comment data" };
+  } else if (title in server.talks) {
+    server.talks[title].comments.push(comment);
+    server.updated();
+    return { status: 204 };
+  } else {
+    return { status: 404, body: `No talk '${title}' found` };
+  }
+});
 
 TedTalkServer.prototype.talkResponse = function () {
   let talks = [];
@@ -137,7 +137,7 @@ TedTalkServer.prototype.talkResponse = function () {
   };
 };
 
-router.add("GET", /^\/talks$/, async (server, request) => {
+router.add("GET", paths.talks, async (server, request) => {
   let tag = /"(.*)"/.exec(request.headers["if-none-match"]);
   let wait = /\bwait=(\d+)/.exec(request.headers["prefer"]);
   if (!tag || tag[1] != server.version) {

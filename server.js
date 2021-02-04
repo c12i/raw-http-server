@@ -11,6 +11,7 @@ var TedTalkServer = class TedTalkServer {
     this.talks = talks;
     this.version = 0;
     this.waiting = [];
+    this.port = undefined;
 
     let fileServer = ecstatic({ root: "./public" });
     this.server = createServer((request, response) => {
@@ -30,11 +31,27 @@ var TedTalkServer = class TedTalkServer {
       }
     });
   }
-  start(port) {
-    this.server.listen(port);
+
+  bind(port) {
+    this._validatePort();
+    this.port = port;
+    return this;
   }
+
+  start(cb = null) {
+    this._validatePort();
+    this.server.listen(this.port);
+    cb && cb();
+  }
+
   stop() {
     this.server.close();
+  }
+
+  _validatePort() {
+    if (!this.port || typeof this.port !== "number" || this.port > 65535) {
+      throw new Error("Invalid port");
+    }
   }
 };
 
@@ -168,4 +185,6 @@ TedTalkServer.prototype.updated = function () {
   this.waiting = [];
 };
 
-new TedTalkServer(Object.create(null)).start(8000);
+new TedTalkServer(Object.create(null))
+  .bind(8000)
+  .start(() => console.log("🚀 Server started"));

@@ -33,7 +33,6 @@ var TedTalkServer = class TedTalkServer {
   }
 
   bind(port) {
-    this._validatePort();
     this.port = port;
     return this;
   }
